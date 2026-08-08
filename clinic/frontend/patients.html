@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients - Clinic Management</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f4f7fb;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .header h1 {
+            color: #1f2937;
+        }
+
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 25px;
+        }
+
+        .title {
+            margin-bottom: 25px;
+        }
+
+        .title h2 {
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .title p {
+            color: #6b7280;
+        }
+
+        .form-card,
+        .patients-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .form-card h3,
+        .patients-card h3 {
+            color: #374151;
+            margin-bottom: 20px;
+        }
+
+        .form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: bold;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .add-btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .add-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f9fafb;
+            color: #374151;
+        }
+
+        td {
+            color: #4b5563;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 25px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 800px) {
+            .form {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                margin-top: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>🏥 Clinic Management</h1>
+
+        <button class="back-btn" onclick="goDashboard()">
+            ← Dashboard
+        </button>
+    </header>
+
+
+    <main class="container">
+
+        <section class="title">
+            <h2>Patients</h2>
+            <p>Manage clinic patients</p>
+        </section>
+
+
+        <section class="form-card">
+
+            <h3>Add New Patient</h3>
+
+            <form id="patientForm" class="form">
+
+                <div class="field">
+                    <label for="name">Patient Name</label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        placeholder="Enter patient name"
+                        required
+                    >
+                </div>
+
+
+                <div class="field">
+                    <label for="age">Age</label>
+
+                    <input
+                        type="number"
+                        id="age"
+                        min="0"
+                        max="120"
+                        placeholder="Enter age"
+                        required
+                    >
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="add-btn"
+                >
+                    Add Patient
+                </button>
+
+            </form>
+
+            <div id="message"></div>
+
+        </section>
+
+
+        <section class="patients-card">
+
+            <h3>Patients List</h3>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="patientsTable">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+        const token =
+            localStorage.getItem("access_token");
+
+
+        // Make sure user is logged in
+        if (!token) {
+
+            window.location.href =
+                "index.html";
+
+        }
+
+
+        const patientForm =
+            document.getElementById(
+                "patientForm"
+            );
+
+        const message =
+            document.getElementById(
+                "message"
+            );
+
+        const patientsTable =
+            document.getElementById(
+                "patientsTable"
+            );
+
+
+        // Load patients
+        async function loadPatients() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        "http://127.0.0.1:8000/patients/",
+                        {
+                            method: "GET",
+
+                            headers: {
+                                "Authorization":
+                                    `Bearer ${token}`
+                            }
+                        }
+                    );
+
+
+                if (response.status === 401) {
+
+                    localStorage.removeItem(
+                        "access_token"
+                    );
+
+                    window.location.href =
+                        "index.html";
+
+                    return;
+                }
+
+
+                const patients =
+                    await response.json();
+
+
+                patientsTable.innerHTML = "";
+
+
+                if (patients.length === 0) {
+
+                    patientsTable.innerHTML = `
+                        <tr>
+                            <td
+                                colspan="4"
+                                class="empty"
+                            >
+                                No patients found
+                            </td>
+                        </tr>
+                    `;
+
+                    return;
+                }
+
+
+                patients.forEach(patient => {
+
+                    const row =
+                        document.createElement("tr");
+
+
+                    row.innerHTML = `
+
+                        <td>${patient.id}</td>
+
+                        <td>${patient.name}</td>
+
+                        <td>${patient.age}</td>
+
+                        <td>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deletePatient(${patient.id})"
+                            >
+                                Delete
+                            </button>
+
+                        </td>
+
+                    `;
+
+
+                    patientsTable.appendChild(row);
+
+                });
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                message.textContent =
+                    "Cannot connect to server";
+
+            }
+
+        }
+
+
+        // Add patient
+        patientForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const name =
+                    document.getElementById(
+                        "name"
+                    ).value;
+
+                const age =
+                    Number(
+                        document.getElementById(
+                            "age"
+                        ).value
+                    );
+
+
+                message.textContent =
+                    "Adding patient...";
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "http://127.0.0.1:8000/patients/",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json",
+
+                                    "Authorization":
+                                        `Bearer ${token}`
+                                },
+
+                                body: JSON.stringify({
+                                    name: name,
+                                    age: age
+                                })
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        message.textContent =
+                            data.detail ||
+                            "Failed to add patient";
+
+                        return;
+                    }
+
+
+                    message.textContent =
+                        "Patient added successfully ✅";
+
+
+                    patientForm.reset();
+
+
+                    loadPatients();
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    message.textContent =
+                        "Cannot connect to server";
+
+                }
+
+            }
+        );
+
+
+        // Delete patient
+        async function deletePatient(patientId) {
+
+            const confirmed =
+                confirm(
+                    "Are you sure you want to delete this patient?"
+                );
+
+
+            if (!confirmed) {
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `http://127.0.0.1:8000/patients/${patientId}`,
+                        {
+                            method: "DELETE",
+
+                            headers: {
+                                "Authorization":
+                                    `Bearer ${token}`
+                            }
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    const data =
+                        await response.json();
+
+                    alert(
+                        data.detail ||
+                        "Failed to delete patient"
+                    );
+
+                    return;
+                }
+
+
+                loadPatients();
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "Cannot connect to server"
+                );
+
+            }
+
+        }
+
+
+        function goDashboard() {
+
+            window.location.href =
+                "dashboard.html";
+
+        }
+
+
+        // Load patients when page opens
+        loadPatients();
+
+    </script>
+
+</body>
+</html>
